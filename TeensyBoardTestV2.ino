@@ -4,10 +4,9 @@
 #include <SPI.h>
 #include <SerialFlash.h>
 #include <Bounce.h>
+#include <ADC.h>
 
 #define AUDIO_THRU
-#define DATA_SIZE 12
-#define I2C_ADDRESS          111 
 
 const int NUM_LEDS(3);
 const int LED_PINS[NUM_LEDS] = { 7, 11, 29 };
@@ -20,20 +19,35 @@ const int POT_PINS[NUM_POTS] = { A16, A17, A18, A19, A20, A13 };
 
 Bounce SWITCH_BOUNCE[NUM_SWITCHES] = { Bounce( SWITCH_PINS[0], 10 ), Bounce( SWITCH_PINS[1], 10 ) };
 
+// wrap in a struct to ensure initialisation order
+struct IO
+{
+  ADC                         adc;
+  AudioInputAnalog            audio_input;
+  AudioOutputAnalog           audio_output;
+
+  IO() :
+    audio_input(A0),
+    audio_output()
+  {
+  }
+};
+
+IO io;
 
 
 #ifdef AUDIO_THRU
-AudioInputAnalog      audio_input(A0);
-AudioOutputAnalog     analog_out;   // must be constructed after AudioInputAnalog
-AudioConnection       patchCord1(audio_input, 0,  analog_out, 0);
+AudioConnection       patchCord1(io.audio_input, 0, io.audio_output, 0);
 #else
 AudioSynthWaveform    waveform;
 AudioOutputAnalog     analog_out;   // must be constructed after AudioInputAnalog
-AudioConnection       patchCord1(waveform, 0,  analog_out, 0);
+AudioConnection       patchCord1(waveform, 0, io.audio_output, 0);
 #endif
 
 void setup()
 {
+  Serial.println("Setup BEGIN");
+  
   AudioMemory(12);
   
   Serial.begin(9600);
@@ -53,13 +67,17 @@ void setup()
 #ifdef AUDIO_THRU
   analogReference(INTERNAL);
   digitalWrite( LED_BUILTIN, HIGH );
+
+  // Audio library has overriden this, so need to reset the reference voltages
+  io.adc.setReference( ADC_REFERENCE::REF_1V2, ADC_1 ); // NOTE: ADC CODE CHECKS FOR SETTING SAME VALUE, SO SET IT TO SOMETHING ELSE FIRST
+  io.adc.setReference( ADC_REFERENCE::REF_3V3, ADC_1 );
 #else
   waveform.begin(WAVEFORM_SINE);
 #endif
   
   delay(1000);
 
-  Serial.println("Setup");
+  Serial.println("Setup END");
 }
 
 void cycle_leds()
@@ -108,7 +126,7 @@ void loop()
   // output pots
   for( int i=0; i<NUM_POTS; ++i )
   {
-    unsigned int v = analogRead( POT_PINS[i] );
+    unsigned int v = io.adc.analogRead( POT_PINS[i], ADC_1 );
     Serial.print(v);
     Serial.print(", ");
   }
