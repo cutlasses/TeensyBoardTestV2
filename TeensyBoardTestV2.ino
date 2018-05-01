@@ -40,7 +40,7 @@ IO io;
 AudioConnection       patchCord1(io.audio_input, 0, io.audio_output, 0);
 #else
 AudioSynthWaveform    waveform;
-AudioOutputAnalog     analog_out;   // must be constructed after AudioInputAnalog
+//AudioOutputAnalog     analog_out;   // must be constructed after AudioInputAnalog
 AudioConnection       patchCord1(waveform, 0, io.audio_output, 0);
 #endif
 
@@ -64,14 +64,14 @@ void setup()
     pinMode( SWITCH_PINS[i], INPUT_PULLUP );
   }
 
-#ifdef AUDIO_THRU
   analogReference(INTERNAL);
   digitalWrite( LED_BUILTIN, HIGH );
 
   // Audio library has overriden this, so need to reset the reference voltages
   io.adc.setReference( ADC_REFERENCE::REF_1V2, ADC_1 ); // NOTE: ADC CODE CHECKS FOR SETTING SAME VALUE, SO SET IT TO SOMETHING ELSE FIRST
   io.adc.setReference( ADC_REFERENCE::REF_3V3, ADC_1 );
-#else
+
+#ifndef AUDIO_THRU
   waveform.begin(WAVEFORM_SINE);
 #endif
   
