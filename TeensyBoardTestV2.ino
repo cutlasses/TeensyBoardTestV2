@@ -27,6 +27,7 @@ struct IO
   AudioOutputAnalog           audio_output;
 
   IO() :
+    adc(),
     audio_input(A0),
     audio_output()
   {
@@ -44,9 +45,44 @@ AudioSynthWaveform    waveform;
 AudioConnection       patchCord1(waveform, 0, io.audio_output, 0);
 #endif
 
+void set_adc1_to_3v3()
+{
+
+  ADC1_SC3 = 0; // cancel calibration
+  ADC1_SC2 = ADC_SC2_REFSEL(0); // vcc/ext ref 3.3v
+
+  ADC1_SC3 = ADC_SC3_CAL;  // begin calibration
+
+  uint16_t sum;
+
+  //serial_print("wait_for_cal\n");
+
+  while( (ADC1_SC3 & ADC_SC3_CAL))
+  {
+    // wait
+  }
+
+  __disable_irq();
+
+    sum = ADC1_CLPS + ADC1_CLP4 + ADC1_CLP3 + ADC1_CLP2 + ADC1_CLP1 + ADC1_CLP0;
+    sum = (sum / 2) | 0x8000;
+    ADC1_PG = sum;
+    sum = ADC1_CLMS + ADC1_CLM4 + ADC1_CLM3 + ADC1_CLM2 + ADC1_CLM1 + ADC1_CLM0;
+    sum = (sum / 2) | 0x8000;
+    ADC1_MG = sum;
+
+  __enable_irq();
+  
+}
+
 void setup()
 {
   Serial.println("Setup BEGIN");
+
+  // Audio library has overriden this, so need to reset the reference voltages
+  //io.adc.setReference( ADC_REFERENCE::REF_1V2, ADC_1 ); // NOTE: ADC CODE CHECKS FOR SETTING SAME VALUE, SO SET IT TO SOMETHING ELSE FIRST
+  //io.adc.setReference( ADC_REFERENCE::REF_3V3, ADC_1 );
+  set_adc1_to_3v3();
   
   AudioMemory(12);
   
@@ -66,10 +102,6 @@ void setup()
 
   analogReference(INTERNAL);
   digitalWrite( LED_BUILTIN, HIGH );
-
-  // Audio library has overriden this, so need to reset the reference voltages
-  io.adc.setReference( ADC_REFERENCE::REF_1V2, ADC_1 ); // NOTE: ADC CODE CHECKS FOR SETTING SAME VALUE, SO SET IT TO SOMETHING ELSE FIRST
-  io.adc.setReference( ADC_REFERENCE::REF_3V3, ADC_1 );
 
 #ifndef AUDIO_THRU
   waveform.begin(WAVEFORM_SINE);
