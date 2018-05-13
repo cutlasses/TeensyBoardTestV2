@@ -158,7 +158,7 @@ void loop()
   // output pots
   for( int i=0; i<NUM_POTS; ++i )
   {
-    unsigned int v = io.adc.analogRead( POT_PINS[i], ADC_1 );
+    const float v = io.adc.analogRead( POT_PINS[i], ADC_1 ) / 65535.0f;
     Serial.print(v);
     Serial.print(", ");
   }
