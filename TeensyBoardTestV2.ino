@@ -9,7 +9,7 @@
 #define AUDIO_THRU
 
 const int NUM_LEDS(3);
-const int LED_PINS[NUM_LEDS] = { 7, 11, 29 };
+const int LED_PINS[NUM_LEDS] = { 29, 11, 7 };
 
 const int NUM_SWITCHES(2);
 const int SWITCH_PINS[NUM_SWITCHES] = { 1, 2 };
@@ -120,6 +120,8 @@ void cycle_leds()
   {
     if( i == led )
     {
+      Serial.print("led:");
+      Serial.println(i);
       digitalWrite( LED_PINS[i], HIGH );
     }
     else
